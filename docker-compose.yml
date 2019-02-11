@@ -1,0 +1,47 @@
+# https://docs.docker.com/compose/compose-file
+# docker-compose restart service-name
+# To start only 2 services:
+# docker-compose up service1 service2
+version: "3.0"
+services:
+  authorization-server:
+    depends_on:
+      - auth-demo-db
+    build:
+      context: ../authorization-server
+      dockerfile: Dockerfile
+      args:
+        PACKAGE_NAME: ./target/authorization-server-0.0.1-SNAPSHOT.jar
+    image: triview-repo/authorization-server:latest
+#    ports:
+#      - 8080:8080         # Exposes externally (For debugging)
+    links:
+      - auth-demo-db
+    environment:
+      DB_HOST: auth-demo-db:3306
+      DB_NAME: auth-demo
+      SERVER_PORT: 8080
+      SPRING_PROFILES_ACTIVE: "docker"
+
+  auth-demo-db:
+    image: mysql:5.7
+    volumes:
+      - auth-demo-server-mysql-data:/var/lib/mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: auth-demo
+      MYSQL_USER: demo
+      MYSQL_PASSWORD: demo
+    ports:
+      - 3310:3306        # Exposes database externally (For debugging)
+  portainer:
+      image: portainer/portainer:latest
+      #    container_name: "portainer-app"
+      ports:
+          - 9999:9000
+      volumes:
+          - /var/run/docker.sock:/var/run/docker.sock
+volumes:
+  auth-demo-server-mysql-data: # "Mountpoint": "/var/lib/docker/volumes/auth-demo-server-mysql-data/_data"
+    driver: local
